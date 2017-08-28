@@ -8,7 +8,7 @@ class AddUser(forms.ModelForm):
         widgets = {
             'password': forms.PasswordInput(),
         }
-        fields = ['username', 'password', 'email', 'is_professor', 'is_site_admin']
+        fields = ['username', 'password', 'email', 'is_lecturer', 'is_site_admin']
 
 
 class EditUser(forms.ModelForm):
@@ -17,7 +17,7 @@ class EditUser(forms.ModelForm):
         widgets = {
             'password': forms.PasswordInput(),
         }
-        fields = ['username', 'password', 'email', 'is_professor', 'is_site_admin']
+        fields = ['username', 'password', 'email', 'is_lecturer', 'is_site_admin']
 
     # Don't want to modify blank setting inside models (doing so will break normal validation in admin site)
     # The redefined constructor won't harm any functionality.

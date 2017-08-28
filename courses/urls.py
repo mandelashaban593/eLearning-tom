@@ -4,10 +4,18 @@ from users import views as user_views
 
 urlpatterns = [
     url(r'^$', course_views.courses, name='courses'),
+    url(r'^addabout/$', course_views.addabout, name='addabout'),
+    url(r'^update_about/$', course_views.update_about, name='update_about'),
+    url(r'^update_post/$', course_views.update_post, name='update_post'),
 
+    url(r'^addacontact/$', course_views.addcontact, name='addacontact'),
+     url(r'^update_contact/$', course_views.update_contact, name='update_contact'),
     url(r'^student/(?P<course_name>[\w ]+)/$', user_views.course_homepage, name='course_homepage'),
     url(r'^student/(?P<course_name>[\w ]+)/(?P<slug>[\w-]+)/$', user_views.student_course,
         name='student_course'),
+
+
+
 
     url(r'^professor/(?P<course_name>[\w ]+)/$', course_views.course, name='professor_course'),
     url(r'^professor/(?P<course_name>[\w ]+)/delete/$', course_views.delete_course, name='delete'),

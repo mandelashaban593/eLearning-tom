@@ -2,24 +2,25 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponseRedirect
 from django.contrib.auth.decorators import user_passes_test, login_required
 from .forms import *
-
+from .models import *
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 @login_required
 def courses(request):
-    if request.user.is_professor or request.user.is_site_admin:
+    if request.user.is_lecturer or request.user.is_site_admin:
         queryset = Course.objects.all()
     else:
         queryset = Course.objects.filter(for_everybody=True)
 
     context = {
-        "title": "Courses",
+        "title": "Admin Panel",
         "queryset": queryset,
     }
 
-    return render(request, "users/course.html", context)
+    return render(request, "adminpan.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def course(request, course_name=None):
     add_chapter_form = AddChapterForm(request.POST or None)
     queryset_chapter = Chapter.objects.filter(course__course_name=course_name)
@@ -42,7 +43,7 @@ def course(request, course_name=None):
     return render(request, "courses/course.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def chapter(request, course_name=None, slug=None):
     place = Chapter.objects.get(course__course_name=course_name, slug=slug)
 
@@ -100,42 +101,42 @@ def chapter(request, course_name=None, slug=None):
     return render(request, "courses/chapter.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def delete_course(request, course_name=None):
     instance = Course.objects.get(course_name=course_name)
     instance.delete()
     return HttpResponseRedirect(reverse('profile'))
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def delete_chapter(request, course_name=None, slug=None):
     instance = Chapter.objects.get(slug=slug)
     instance.delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def delete_yt_link(request, yt_id=None):
     instance = YTLink.objects.get(id=yt_id)
     instance.delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def delete_text_block(request, txt_id=None):
     instance = TextBlock.objects.get(id=txt_id)
     instance.delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def delete_file(request, file_id=None):
     instance = FileUpload.objects.get(id=file_id)
     instance.delete()
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def update_course(request, course_name=None):
     instance = Course.objects.get(course_name=course_name)
     update_course_form = EditCourseForm(request.POST or None, instance=instance)
@@ -158,7 +159,7 @@ def update_course(request, course_name=None):
     return render(request, "courses/edit.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def update_chapter(request, course_name=None, slug=None):
     instance = Chapter.objects.get(slug=slug)
     update_chapter_form = EditChapterForm(request.POST or None, instance=instance)
@@ -182,7 +183,7 @@ def update_chapter(request, course_name=None, slug=None):
     return render(request, "courses/edit.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def update_yt_link(request, course_name=None, slug=None, yt_id=None):
     instance = YTLink.objects.get(id=yt_id)
     update_link_form = EditYTLinkForm(request.POST or None, instance=instance)
@@ -205,7 +206,7 @@ def update_yt_link(request, course_name=None, slug=None, yt_id=None):
     return render(request, "courses/edit.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def update_text_block(request, course_name=None, slug=None, txt_id=None):
     instance = TextBlock.objects.get(id=txt_id)
     update_txt_form = EditTxtForm(request.POST or None, instance=instance)
@@ -228,11 +229,11 @@ def update_text_block(request, course_name=None, slug=None, txt_id=None):
     return render(request, "courses/edit.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def list_students(request, course_name=None):
     course = Course.objects.get(course_name=course_name)
     added_students = UserProfile.objects.filter(students_to_course=course)
-    excluded_students = UserProfile.objects.exclude(students_to_course=course).filter(is_professor=False).filter(
+    excluded_students = UserProfile.objects.exclude(students_to_course=course).filter(is_lecturer=False).filter(
         is_site_admin=False)
 
     query_first = request.GET.get("q1")
@@ -266,9 +267,319 @@ def add_students(request, student_id, course_name=None):
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def remove_students(request, student_id, course_name=None):
     student = UserProfile.objects.get(id=student_id)
     course = Course.objects.get(course_name=course_name)
     course.students.remove(student)
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
+
+
+
+
+@login_required()
+def addabout(request):
+    topic_list = About.objects.all().order_by('-date_updated')
+    first_abut = About.objects.get(id=1)
+    add_new_topic = AddNewAbout(request.POST or None)
+
+    path = request.path.split('/')[1]
+    redirect_path = path
+    path = path.title()
+
+    search = request.GET.get("search")
+    if search:
+        topic_list = topic_list.filter(title__startswith=search)
+
+    paginator = Paginator(topic_list, 10)
+
+    if add_new_topic.is_valid():
+        instance = add_new_topic.save(commit=False)
+        instance.staff = request.user
+        slug = slugify(instance.title)
+        exists = About.objects.filter(slug=slug).exists()
+        try:
+            max_id = About.objects.latest('id').id
+            max_id += 1
+        except Exception, e:
+            pass
+
+        # If slug exist append slug by id
+        if exists:
+            slug = "%s-%s" % (slug, max_id)
+
+        instance.slug = slug
+
+        if not instance.title:
+            instance.save()
+
+        return redirect(reverse("courses"))
+
+    page = request.GET.get('page')
+    try:
+        queryset = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        queryset = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        queryset = paginator.page(paginator.num_pages)
+
+    context = {
+        "title": "About",
+        "add_new_topic_form": add_new_topic,
+        "topic_list": queryset,
+        "path": path,
+        "redirect_path": redirect_path,
+    }
+
+    return render(request, "adminpan.html", context)
+
+
+
+
+
+
+@user_passes_test(lambda user: user.is_staff)
+def update_about(request):
+    topic_list = About.objects.get(id=1)
+    add_new_topic = AddNewAbout(instance=topic_list)
+
+    path = request.path.split('/')[1]
+    redirect_path = path
+    path = path.title()
+    queryset = None
+
+    search = request.GET.get("search")
+    if search:
+        topic_list = topic_list.filter(title__startswith=search)
+
+    paginator = Paginator(topic_list, 10)
+
+
+    if add_new_topic.is_valid():
+        instance = add_new_topic.save(commit=False)
+        instance.staff = request.user
+        slug = slugify(instance.title)
+        exists = About.objects.filter(slug=slug).exists()
+        try:
+            max_id = About.objects.latest('id').id
+            max_id += 1
+        except Exception, e:
+            pass
+
+        # If slug exist append slug by id
+        if exists:
+            slug = "%s-%s" % (slug, max_id)
+
+        instance.slug = slug
+
+        if not instance.title:
+            instance.save()
+
+        return redirect(reverse("courses"))
+
+    page = request.GET.get('page')
+    try:
+        queryset = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+         k = 12
+      
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        queryset = paginator.page(paginator.num_pages)
+
+    context = {
+        "title": "update",
+        "add_new_topic_form": add_new_topic,
+        "topic_list": queryset,
+        "path": path,
+        "redirect_path": redirect_path,
+    }
+
+
+
+    return render(request, "adminpan.html", context)
+
+
+
+
+
+def update_post(request):
+    topic_list = About.objects.get(id=1)
+    add_new_topic = AddNewAbout(request.POST or None)
+
+    path = request.path.split('/')[1]
+    redirect_path = path
+    path = path.title()
+    queryset = None
+
+    search = request.GET.get("search")
+    if search:
+        topic_list = topic_list.filter(title__startswith=search)
+
+    paginator = Paginator(topic_list, 10)
+
+
+    if add_new_topic.is_valid():
+        
+        instance = add_new_topic.save(commit=False)
+      
+        topic_list.title = instance.title
+        topic_list.sub_title = instance.sub_title
+        topic_list.about_message = instance.about_message
+        slug = slugify(topic_list.title)
+
+        exists = About.objects.filter(slug=slug).exists()
+       
+
+        topic_list.slug = slug
+        if not topic_list.title and topic_list.about_message:
+            instance.save()
+        
+        topic_list.save()
+
+        return redirect(reverse("courses"))
+        
+
+
+    return render(request, "adminpan.html", context)
+
+
+
+
+
+@login_required()
+def addcontact(request):
+    topic_list = Contact.objects.all().order_by('-date_updated')
+
+    try:
+        first_abut =Contact.objects.get(id=1) 
+    except Exception, e:
+        pass
+    add_new_topic = AddNewContact(request.POST or None)
+
+    path = request.path.split('/')[1]
+    redirect_path = path
+    path = path.title()
+
+    search = request.GET.get("search")
+    if search:
+        topic_list = topic_list.filter(title__startswith=search)
+
+    paginator = Paginator(topic_list, 10)
+
+    if add_new_topic.is_valid():
+        instance = add_new_topic.save(commit=False)
+        instance.staff = request.user
+        slug = slugify(instance.email)
+        exists = Contact.objects.filter(slug=slug).exists()
+        try:
+            max_id = Contact.objects.latest('id').id
+            max_id += 1
+        except Exception, e:
+            pass
+
+        # If slug exist append slug by id
+        if exists:
+            slug = "%s-%s" % (slug, max_id)
+
+        instance.slug = slug
+
+        if not instance.phonenumber and not instance.email and not  instance.address:
+            instance.save()
+
+        return redirect(reverse("courses"))
+
+    page = request.GET.get('page')
+    try:
+        queryset = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+        queryset = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        queryset = paginator.page(paginator.num_pages)
+
+    context = {
+        "title": "Contact",
+        "add_new_topic_form": add_new_topic,
+        "topic_list": queryset,
+        "path": path,
+        "redirect_path": redirect_path,
+    }
+
+    return render(request, "adminpan.html", context)
+
+
+
+
+
+@user_passes_test(lambda user: user.is_staff)
+def update_contact(request):
+    topic_list = None 
+    try:
+        topic_list = Contact.objects.get(id=1)
+    except Exception, e:
+        pass
+
+    add_new_topic = AddNewAbout(instance=topic_list)
+
+    path = request.path.split('/')[1]
+    redirect_path = path
+    path = path.title()
+    queryset = None
+
+    search = request.GET.get("search")
+    if search:
+        topic_list = topic_list.filter(email__startswith=search)
+
+    paginator = Paginator(topic_list, 10)
+
+
+    if add_new_topic.is_valid():
+        instance = add_new_topic.save(commit=False)
+        instance.staff = request.user
+        slug = slugify(instance.title)
+        exists = Contact.objects.filter(slug=slug).exists()
+        try:
+            max_id = Contact.objects.latest('id').id
+            max_id += 1
+        except Exception, e:
+            pass
+
+        # If slug exist append slug by id
+        if exists:
+            slug = "%s-%s" % (slug, max_id)
+
+        instance.slug = slug
+
+        if not instance.email:
+            instance.save()
+
+        return redirect(reverse("courses"))
+
+    page = request.GET.get('page')
+    try:
+        queryset = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page.
+         k = 12
+      
+    except EmptyPage:
+        # If page is out of range (e.g. 9999), deliver last page of results.
+        queryset = paginator.page(paginator.num_pages)
+
+    context = {
+        "title": "update_contact",
+        "add_new_topic_form": add_new_topic,
+        "topic_list": queryset,
+        "path": path,
+        "redirect_path": redirect_path,
+    }
+
+
+
+    return render(request, "adminpan.html", context)
+

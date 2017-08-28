@@ -28,9 +28,9 @@ a {
 
 @media (min-width: 1205px) {
     #mainNavBar {
-        padding-left: 150px;
+        padding-left: 20px;
         padding-right: 150px;
-    }
+        margin-top: 100px;    }
 }
 
 @media (max-width: 1200px) {
@@ -43,6 +43,8 @@ a {
 /*--navbar--*/
 #mainNavBar {
     margin-top: 10px;
+    width: 1540px;
+
 }
 
 .nav-wrapper {
@@ -183,7 +185,7 @@ p.m_2 {
 
 /*--banner--*/
 .banner {
-    background: url(../img/e-banner.png) no-repeat 0 0;
+    background: url(../img/e-banne.png) no-repeat 0 0;
     min-height: 350px;
     background-size: 100% 100%;
 }

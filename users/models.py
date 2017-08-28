@@ -5,5 +5,5 @@ from django.contrib.auth.models import AbstractUser
 
 
 class UserProfile(AbstractUser):
-    is_professor = models.BooleanField(default=False)
+    is_lecturer = models.BooleanField(default=False)
     is_site_admin = models.BooleanField(default=False)

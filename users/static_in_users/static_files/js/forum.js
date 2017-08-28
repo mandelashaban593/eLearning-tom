@@ -13,10 +13,10 @@ $(document).ready(function () {
 
 
         // Check if empty of not
-        if ($subject === '' || editorContent === '') {
+      /*  if ($subject === '' || editorContent === '') {
             alert("Can't submit empty fields");
             return false;
-        }
+        }*/
     });
 
     var $topic = $(".add-btn");

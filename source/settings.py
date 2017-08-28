@@ -171,3 +171,5 @@ if os.path.isfile(settings_sensitive):
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 
 AUTH_USER_MODEL = 'users.UserProfile'
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

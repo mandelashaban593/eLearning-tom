@@ -58,7 +58,7 @@ def profile(request):
     if request.user.is_site_admin:
         return redirect(reverse('admin'))
 
-    elif request.user.is_professor:
+    elif request.user.is_lecturer:
         return redirect(reverse('professor'))
 
     return redirect(reverse('student'))
@@ -91,7 +91,7 @@ def admin(request):
     return render(request, "users/sysadmin_dashboard.html", context)
 
 
-@user_passes_test(lambda user: user.is_professor)
+@user_passes_test(lambda user: user.is_lecturer)
 def professor(request):
     add_course_form = AddCourseForm(request.POST or None)
     queryset_course = Course.objects.filter(user__username=request.user)
@@ -188,7 +188,7 @@ def student_course(request, course_name, slug=None):
     files = FileUpload.objects.filter(file_fk=chapter)
     user = request.user
 
-    if user in course.students.all() or user.is_professor or user.is_site_admin or course.for_everybody:
+    if user in course.students.all() or user.is_lecturer or user.is_site_admin or course.for_everybody:
         result_list = sorted(
             chain(text, videos, files),
             key=lambda instance: instance.date_created)
